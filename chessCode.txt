@@ -1,0 +1,374 @@
+#include <SFML/Graphics.hpp>
+#include <iostream>
+#include <stdlib.h>
+#include <windows.h>
+#include <string>
+
+using namespace sf;
+using namespace std;
+
+bool fmove(int kkf, int znak, int i1, int j1, int i2, int j2) //i1, j1 - old; i2, j2 - new;
+{
+    bool fgo = false;
+    switch (kkf)
+    {
+    case 10:
+        if (j1 - j2 == 1 && abs(i1 - i2) == 1 && znak < 0) //съедает черную
+        {
+            fgo = true;
+        }
+        else if (i1 == i2 && j1 - j2 > 0 && znak == 0) //идет вверх по вертикали и позиция пустая (znak=0)
+        {
+            if (j1 - j2 == 1 || (j1 - j2 == 2 && j1 == 6)) // на 1 шаг или на 2 шага, но с начальной позиции (j1=6)
+            {
+                fgo = true;
+            }
+        }
+        break;
+    case -10:
+        if (j2 - j1 == 1 && abs(i1 - i2) == 1 && znak < 0)  //съедает белую
+        {
+            fgo = true;
+        }
+        else if (i1 == i2 && j2 - j1 > 0 && znak == 0) //идет вниз по вертикали
+        {
+            if (j2 - j1 == 1 || (j2 - j1 == 2 && j1 == 1)) // на 1 шаг или на 2 шага, но с начальной позиции (j1=1)
+            {
+                fgo = true;
+            }
+        }
+        break;
+    case 1:
+    case -1:
+        if ((i2 == i1 && j2 != j1 && znak <= 0) || (i2 != i1 && j2 == j1 && znak <= 0))
+        {
+            fgo = true;
+        }
+        break;
+    case 2:
+    case -2:
+        if ((abs(i2 - i1) == 1 && abs(j2 - j1) == 2 && znak <= 0) || (abs(i2 - i1) == 2 && abs(j2 - j1) == 1 && znak <= 0))
+        {
+            fgo = true;
+        }
+        break;
+    case 3:
+    case -3:
+        if (abs(i2 - i1) == abs(j2 - j1) && znak <= 0)
+        {
+            fgo = true;
+        }
+        break;
+    case 4:
+    case -4:
+        if ((abs(i2 - i1) == abs(j2 - j1) && znak <= 0) || (i2 == i1 && j2 != j1 && znak <= 0) || (i2 != i1 && j2 == j1 && znak <= 0))
+        {
+            fgo = true;
+        }
+        break;
+    case 5:
+    case -5:
+        if ((abs(i2 - i1) == 1 && znak <= 0) || (abs(j2 - j1) == 1 && znak <= 0))
+        {
+            fgo = true;
+        }
+        break;
+    default:
+        fgo = true;
+        break;
+    }
+    return fgo;
+}
+
+int main()
+{
+    int i, j, nPos = 70, KF;
+    int posX, posY, new_posX, new_posY, old_posX, old_posY;
+    int iold, jold, iNew, jNew, KKF;
+    float dX, dY;
+    Sprite spr;
+    bool isMove = false;
+    int PF[8][8];
+    string CF[8][8];
+    Texture tableB, tableW, test, wk, bk, wr, br, wkn, bkn, wb, bb, wq, bq, wp, bp, flh, flh1;
+    tableB.loadFromFile("c:/all codes/C++/chess/blackK.png");
+    tableW.loadFromFile("c:/all codes/C++/chess/whiteK.png");
+    test.loadFromFile("c:/all codes/C++/chess/Brown.png");
+    wk.loadFromFile("c:/all codes/C++/chess/whiteKing.png");
+    bk.loadFromFile("c:/all codes/C++/chess/blackKing.png");
+    wr.loadFromFile("c:/all codes/C++/chess/whiteRook.png");
+    br.loadFromFile("c:/all codes/C++/chess/blackRook.png");
+    wkn.loadFromFile("c:/all codes/C++/chess/whiteKnight.png");
+    bkn.loadFromFile("c:/all codes/C++/chess/blackKnight.png");
+    wb.loadFromFile("c:/all codes/C++/chess/whiteBishop.png");
+    bb.loadFromFile("c:/all codes/C++/chess/blackBishop.png");
+    wq.loadFromFile("c:/all codes/C++/chess/whiteQueen.png");
+    bq.loadFromFile("c:/all codes/C++/chess/blackQueen.png");
+    wp.loadFromFile("c:/all codes/C++/chess/whitePaw.png");
+    bp.loadFromFile("c:/all codes/C++/chess/blackPaw.png");
+    flh.loadFromFile("c:/all codes/C++/chess/transparent.png");
+
+
+    RenderWindow window(VideoMode(560, 560), "made by: Gleb Panin and Glotov Vsevolod");
+    Sprite boardB(tableB);
+    Sprite boardW(tableW);
+    Sprite Brown(test);
+    Sprite whiteKing(wk);
+    Sprite blackKing(bk);
+    Sprite whiteRook(wr);
+    Sprite blackRook(br);
+    Sprite whiteKnight(wkn);
+    Sprite blackKnight(bkn);
+    Sprite whiteBishop(wb);
+    Sprite blackBishop(bb);
+    Sprite whiteQueen(wq);
+    Sprite blackQueen(bq);
+    Sprite whitePaw(wp);
+    Sprite blackPaw(bp);
+    Sprite flash(flh);
+
+    //Массив первоначальных позиций
+    for (j = 2; j < 6; j++)
+    {
+        for (i = 0; i < 8; i++)
+        {
+            PF[i][j] = 0;
+        }
+    }
+    PF[0][7] = 1;//rook white
+    PF[1][7] = 2;//knight
+    PF[2][7] = 3;//bishop
+    PF[3][7] = 4;//queen
+    PF[4][7] = 5;//king
+    PF[5][7] = 3;
+    PF[6][7] = 2;
+    PF[7][7] = 1;
+    PF[0][0] = -1;//rook black
+    PF[1][0] = -2;//knight
+    PF[2][0] = -3;//bishop
+    PF[3][0] = -4;//queen
+    PF[4][0] = -5;//king
+    PF[5][0] = -3;
+    PF[6][0] = -2;
+    PF[7][0] = -1;
+
+    for (i = 0; i < 8; i++)
+    {
+        PF[i][1] = -10;//black pawn
+        PF[i][6] = 10;//white pawn
+    }
+
+    while (window.isOpen())
+    {
+
+        Vector2i pixelPos = Mouse::getPosition(window);//забираем коорд курсора
+        Vector2f pos = window.mapPixelToCoords(pixelPos);
+        posX = 0;
+        posY = 0;
+        window.clear();
+        for (j = 0; j < 8; j++)
+        {
+            for (i = 0; i < 8; i++)
+            {
+
+                if (j % 2 == 0)
+                {
+                    if (i % 2 == 0)
+                    {
+                        boardW.setPosition(posX, posY);
+                        window.draw(boardW);
+                    }
+                    else if (i % 2 != 0)
+                    {
+                        Brown.setPosition(posX, posY);
+                        window.draw(Brown);
+                    }
+                    posX += 70;
+                }
+                else
+                {
+                    if (i % 2 != 0)
+                    {
+                        boardW.setPosition(posX, posY);
+                        window.draw(boardW);
+                    }
+                    else if (i % 2 == 0)
+                    {
+                        Brown.setPosition(posX, posY);
+                        window.draw(Brown);
+                    }
+                    posX += 70;
+                }
+            }
+            posY += 70;
+            posX = 0;
+        }
+        /* Расстановка фигур*/
+        for (j = 0; j < 8; j++)
+        {
+            for (i = 0; i < 8; i++)
+            {
+                KF = PF[i][j];
+                switch (KF)
+                {
+                case 1:
+                    whiteRook.setPosition(i * 70, j * 70);
+                    window.draw(whiteRook);
+                    break;
+                case 2:
+                    whiteKnight.setPosition(i * 70, j * 70);
+                    window.draw(whiteKnight);
+                    break;
+                case 3:
+                    whiteBishop.setPosition(i * 70, j * 70);
+                    window.draw(whiteBishop);
+                    break;
+                case 4:
+                    whiteQueen.setPosition(i * 70, j * 70);
+                    window.draw(whiteQueen);
+                    break;
+                case 5:
+                    whiteKing.setPosition(i * 70, j * 70);
+                    window.draw(whiteKing);
+                    break;
+                case -1:
+                    blackRook.setPosition(i * 70, j * 70);
+                    window.draw(blackRook);
+                    break;
+                case -2:
+                    blackKnight.setPosition(i * 70, j * 70);
+                    window.draw(blackKnight);
+                    break;
+                case -3:
+                    blackBishop.setPosition(i * 70, j * 70);
+                    window.draw(blackBishop);
+                    break;
+                case -4:
+                    blackQueen.setPosition(i * 70, j * 70);
+                    window.draw(blackQueen);
+                    break;
+                case -5:
+                    blackKing.setPosition(i * 70, j * 70);
+                    window.draw(blackKing);
+                    break;
+                case 10:
+                    whitePaw.setPosition(i * 70, j * 70);
+                    window.draw(whitePaw);
+                    break;
+                case -10:
+                    blackPaw.setPosition(i * 70, j * 70);
+                    window.draw(blackPaw);
+                    break;
+                case 0:
+                    break;
+                }
+            }
+        }
+        Event event;
+        while (window.pollEvent(event))
+        {
+            if (event.type == Event::Closed)
+            {
+                window.close();
+            }
+            // }
+            if (event.type == Event::MouseButtonPressed)//если нажата клавиша мыши
+            {
+                if (event.key.code == Mouse::Left)//а именно левая
+                {
+
+                    //iold = event.mouseButton.x / 70;
+                    //jold = event.mouseButton.y / 70;
+                    iold = pos.x / 70;
+                    jold = pos.y / 70;
+                    old_posX = iold * 70;
+                    old_posY = jold * 70;
+                    dX = pos.x - old_posX;
+                    dY = pos.y - old_posY;
+                    KKF = PF[iold][jold];
+                    if (KKF == 0)  //пустая позиция
+                    {
+                        isMove = false;
+                    }
+                    else
+                    {
+                        switch (KKF)
+                        {
+                        case 1:
+                            spr = whiteRook;
+                            break;
+                        case 2:
+                            spr = whiteKnight;
+                            break;
+                        case 3:
+                            spr = whiteBishop;
+                            break;
+                        case 4:
+                            spr = whiteQueen;
+                            break;
+                        case 5:
+                            spr = whiteKing;
+                            break;
+                        case -1:
+                            spr = blackRook;
+                            break;
+                        case -2:
+                            spr = blackKnight;
+                            break;
+                        case -3:
+                            spr = blackBishop;
+                            break;
+                        case -4:
+                            spr = blackQueen;
+                            break;
+                        case -5:
+                            spr = blackKing;
+                            break;
+                        case 10:
+                            spr = whitePaw;
+                            break;
+                        case -10:
+                            spr = blackPaw;
+                            break;
+                        case 0:
+                            break;
+                        }
+                        isMove = true;//можем двигать спрайт
+                    }
+                }
+            }
+            if (event.type == Event::MouseButtonReleased)//если отпустили клавишу
+            {
+                if (event.key.code == Mouse::Left) //а именно левую
+                {
+                    isMove = false; //то не можем двигать спрайт
+                    if ((pos.x >= 0 && pos.x <= 560) && (pos.y >= 0 && pos.y <= 560)) // курсор мыши внутри окна?
+                    {
+                        iNew = pos.x / 70;
+                        jNew = pos.y / 70;
+                        if ((KKF != 0 && (PF[iold][jold] * PF[iNew][jNew]) <= 0) && fmove(KKF, PF[iold][jold] * PF[iNew][jNew], iold, jold, iNew, jNew) && abs(PF[iNew][jNew]) != 5)
+                        {
+                            PF[iold][jold] = 0;
+                            PF[iNew][jNew] = KKF;
+                        }
+                    }
+                }
+            }
+            if (isMove)
+            {
+                if ((pos.x >= 0 && pos.x <= 560) && (pos.y >= 0 && pos.y <= 560)) // курсор мыши внутри окна?
+                {
+                    new_posX = pos.x - dX;
+                    new_posY = pos.y - dY;
+                    spr.setPosition(new_posX, new_posY);
+                    window.draw(spr);  //следует за мышью
+                    flash.setPosition(new_posX, new_posY);  //прозрачная подсветка 
+                    window.draw(flash);
+                }
+            }
+            window.display();
+        }
+    }
+
+    return 0;
+}
